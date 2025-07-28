@@ -112,7 +112,7 @@ class WebSlashCommandProcessor {
       // チャット履歴の保存（簡易実装）
       return {
         type: 'message',
-        content: `チャット履歴を "${tag}" として保存しました。`
+        content: `チャット履歴を '${tag}' として保存しました。`
       };
     }
 
@@ -193,7 +193,7 @@ app.post('/api/chat', async (_req, res) => {
           
           // gh auth statusを確認してからsetup-gitを実行
           console.log('Starting GitHub CLI authentication process...');
-          exec(`gh auth status`, { cwd: workingDir }, (statusError, statusStdout, statusStderr) => {
+          exec('gh auth status', { cwd: workingDir }, (statusError, statusStdout, statusStderr) => {
             console.log('=== GitHub CLI auth status ===');
             console.log(statusStdout || statusStderr || 'No output');
             
@@ -208,7 +208,7 @@ app.post('/api/chat', async (_req, res) => {
                 if (loginStderr) console.log('stderr:', loginStderr);
                 
                 // gh auth setup-gitを実行
-                exec(`gh auth setup-git`, { cwd: workingDir }, (setupError, setupStdout, setupStderr) => {
+                exec('gh auth setup-git', { cwd: workingDir }, (setupError, setupStdout, setupStderr) => {
                   if (setupError) {
                     console.error('Failed to setup git auth:', setupError);
                     console.error('stderr:', setupStderr);
