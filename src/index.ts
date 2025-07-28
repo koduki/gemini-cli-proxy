@@ -172,8 +172,15 @@ app.post('/api/chat', async (_req, res) => {
     let githubToken: string | undefined;
     try {
       console.log('GitHubトークン取得処理を開始します');
-      githubToken = await getInstallationAccessToken();
-      console.log(`GitHub token acquired successfully. Token starts with: ${githubToken.substring(0, 8)}`);
+      
+      // デバッグ用: 環境変数でGitHub認証をスキップできるようにする
+      if (process.env.SKIP_GITHUB_AUTH === 'true') {
+        console.log('SKIP_GITHUB_AUTH=true: GitHub認証をスキップします');
+        githubToken = 'dummy-token-for-testing';
+      } else {
+        githubToken = await getInstallationAccessToken();
+        console.log(`GitHub token acquired successfully. Token starts with: ${githubToken.substring(0, 8)}`);
+      }
 
       // トークンをファイルに書き出す
       const tokenFilePath = path.join(workingDir, '.github_token');
@@ -185,6 +192,7 @@ app.post('/api/chat', async (_req, res) => {
           console.log('GitHub token successfully written to .github_token');
           
           // gh auth statusを確認してからsetup-gitを実行
+          console.log('Starting GitHub CLI authentication process...');
           exec(`gh auth status`, { cwd: workingDir }, (statusError, statusStdout, statusStderr) => {
             console.log('=== GitHub CLI auth status ===');
             console.log(statusStdout || statusStderr || 'No output');
