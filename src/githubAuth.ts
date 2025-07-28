@@ -1,5 +1,4 @@
 import { App } from 'octokit';
-import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
