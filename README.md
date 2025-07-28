@@ -16,7 +16,7 @@ This proxy mirrors the architecture of the Gemini CLI's interactive TUI mode, en
 -   **Stateful Session Management**: Maintains independent conversation histories for multiple sessions.
 -   **Tool Execution**: Supports standard Gemini CLI tools, including file system operations, shell commands, and web searches.
 -   **Slash Commands**: Implements familiar TUI commands like `/help` and `/clear` for the web.
--   **Docker Ready**: Simplified setup with Docker Compose.
+-   **Container Ready**: Simplified setup with Docker Compose.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ You can get the proxy up and running quickly using Docker and Docker Compose.
 2.  **Build and run the container**
 
     ```bash
-    docker-compose up -d --build
+    docker compose up -d --build
     ```
 
 3.  **Access the service**
@@ -66,11 +66,11 @@ You can get the proxy up and running quickly using Docker and Docker Compose.
 
 -   **View logs**:
     ```bash
-    docker-compose logs -f
+    docker compose logs -f
     ```
--   **Stop the container**:
+-   **Debug container**:
     ```bash
-    docker-compose down
+    docker exec -it gemini-cli-proxy-gemini-cli-proxy-1 bash
     ```
 
 ## API Reference
