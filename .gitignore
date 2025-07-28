@@ -104,6 +104,8 @@ dist
 # vitepress cache directory
 **/.vitepress/cache
 
+.github_token
+
 # Docusaurus cache and generated files
 .docusaurus
 

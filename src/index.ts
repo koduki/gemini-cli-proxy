@@ -5,8 +5,11 @@ import { WebSocketServer } from 'ws';
 import { Config, AuthType } from '@google/gemini-cli-core';
 import { GenerateContentResponse } from '@google/genai';
 import { randomUUID } from 'crypto';
-import { mkdirSync } from 'fs';
+import { mkdirSync, writeFile } from 'fs';
 import { fileURLToPath } from 'url';
+import path from 'path';
+import { exec } from 'child_process';
+import { getInstallationAccessToken } from './githubAuth.js';
 
 // Define incoming message structure for type safety
 interface WebSocketMessage {
@@ -49,6 +52,7 @@ const sessions = new Map<string, {
   }>;
   config: Config;
   workingDir: string;
+  githubToken?: string;
 }>();
 
 // TUI版のスラッシュコマンド処理をWeb版に移植
@@ -108,8 +112,24 @@ class WebSlashCommandProcessor {
       // チャット履歴の保存（簡易実装）
       return {
         type: 'message',
-        content: `チャット履歴を "${tag}" として保存しました。`
+        content: `チャット履歴を '${tag}' として保存しました。`
       };
+    }
+
+    if (trimmed === '/gettoken') {
+      try {
+        const token = await getInstallationAccessToken();
+        return {
+          type: 'message',
+          content: `GitHub Token: ${token}`
+        };
+      } catch (error) {
+        console.error('Failed to get GitHub App token:', error);
+        return {
+          type: 'message',
+          content: 'GitHub Appのトークン取得に失敗しました。'
+        };
+      }
     }
 
     return null;
@@ -148,12 +168,74 @@ app.post('/api/chat', async (_req, res) => {
     await config.initialize();
     await config.refreshAuth(AuthType.USE_GEMINI);
 
+    // GitHub App Tokenを取得
+    let githubToken: string | undefined;
+    try {
+      console.log('GitHubトークン取得処理を開始します');
+      
+      // デバッグ用: 環境変数でGitHub認証をスキップできるようにする
+      if (process.env.SKIP_GITHUB_AUTH === 'true') {
+        console.log('SKIP_GITHUB_AUTH=true: GitHub認証をスキップします');
+        githubToken = 'dummy-token-for-testing';
+      } else {
+        githubToken = await getInstallationAccessToken();
+        console.log(`GitHub token acquired successfully. Token starts with: ${githubToken.substring(0, 8)}`);
+      }
+
+      // トークンをファイルに書き出す
+      const tokenFilePath = path.join(workingDir, '.github_token');
+      writeFile(tokenFilePath, githubToken, (err) => {
+        if (err) {
+          // ここでのエラーはセッション作成をブロックしない
+          console.error('Failed to write GitHub token to file:', err);
+        } else {
+          console.log('GitHub token successfully written to .github_token');
+          
+          // gh auth statusを確認してからsetup-gitを実行
+          console.log('Starting GitHub CLI authentication process...');
+          exec('gh auth status', { cwd: workingDir }, (statusError, statusStdout, statusStderr) => {
+            console.log('=== GitHub CLI auth status ===');
+            console.log(statusStdout || statusStderr || 'No output');
+            
+            // gh auth loginを実行
+            exec(`echo ${githubToken} | gh auth login --with-token`, { cwd: workingDir }, (loginError, loginStdout, loginStderr) => {
+              if (loginError) {
+                console.error('Failed to login with gh:', loginError);
+                console.error('stderr:', loginStderr);
+              } else {
+                console.log('=== GitHub CLI login result ===');
+                console.log(loginStdout || 'Login completed (no output)');
+                if (loginStderr) console.log('stderr:', loginStderr);
+                
+                // gh auth setup-gitを実行
+                exec('gh auth setup-git', { cwd: workingDir }, (setupError, setupStdout, setupStderr) => {
+                  if (setupError) {
+                    console.error('Failed to setup git auth:', setupError);
+                    console.error('stderr:', setupStderr);
+                  } else {
+                    console.log('=== GitHub CLI git auth setup result ===');
+                    console.log(setupStdout || 'Git auth setup completed (no output)');
+                    if (setupStderr) console.log('stderr:', setupStderr);
+                  }
+                });
+              }
+            });
+          });
+        }
+      });
+    } catch (error) {
+      console.error('GitHub App authentication failed during session creation:', error);
+      return res.status(500).json({ error: 'Failed to authenticate with GitHub App. Please check your .env settings.' });
+    }
+
     sessions.set(sessionId, {
       sessionId,
       history: [],
       config,
-      workingDir
+      workingDir,
+      githubToken
     });
+    console.log(`Session ${sessionId} created and GitHub token stored.`);
 
     console.log('Session stored. Total sessions:', sessions.size);
     res.json({ sessionId });
@@ -243,6 +325,11 @@ wss.on('connection', (ws) => {
           }
 
           // 通常のメッセージ処理
+          if (!userMessage) {
+            ws.send(JSON.stringify({ type: 'stream_end' }));
+            return;
+          }
+          
           session.history.push({
             role: 'user',
             content: userMessage,
@@ -311,7 +398,17 @@ wss.on('connection', (ws) => {
                   }
                   const tool = toolRegistry.getTool(fc.name);
                   if (tool) {
+                    // Set GitHub Token for run_shell_command from session
+                    if (fc.name === 'run_shell_command' && session.githubToken) {
+                      process.env.GH_TOKEN = session.githubToken;
+                    }
+
                     const result = await tool.execute(fc.args || {}, new AbortController().signal);
+
+                    // Clean up environment variable
+                    if (fc.name === 'run_shell_command' && session.githubToken) {
+                      delete process.env.GH_TOKEN;
+                    }
 
                     if (typeof result.llmContent === 'string') {
                       toolResponseParts.push({ text: result.llmContent });
@@ -331,6 +428,10 @@ wss.on('connection', (ws) => {
                   }
                 } catch (toolError: unknown) { // Replaced any
                   console.error('Tool execution error:', toolError);
+                  // Clean up environment variable in case of error
+                  if (fc.name === 'run_shell_command' && session.githubToken) {
+                    delete process.env.GH_TOKEN;
+                  }
                   if (fc.name) {
                     const message = toolError instanceof Error ? toolError.message : 'An unknown tool error occurred';
                     ws.send(JSON.stringify({

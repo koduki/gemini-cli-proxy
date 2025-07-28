@@ -7,7 +7,8 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint 'src/**/*.ts'",
-    "test": "vitest"
+    "test": "vitest",
+    "get-token": "tsx getToken.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,12 +18,16 @@
     "@google/gemini-cli-core": "^0.1.14",
     "@google/genai": "^1.9.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "octokit": "^5.0.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.1.0",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
