@@ -114,30 +114,48 @@ TUI版コマンドをWeb版に移植：
 }
 ```
 
-## セットアップ
+## セットアップ (Docker)
+
+DockerとDocker Composeを使用して、簡単に環境を構築できます。
 
 ### 前提条件
 
-- Node.js 20以上
+- Docker と Docker Compose
 - Gemini API キー
-- `@google/gemini-cli-core`パッケージ
 
-### インストール
+### 手順
 
-1. 依存関係のインストール：
-```bash
-npm install @google/gemini-cli-core @google/genai
-```
+1.  **環境変数の設定**
 
-2. 環境変数の設定：
-```bash
-export GEMINI_API_KEY="your-api-key-here"
-```
+    プロジェクトのルートディレクトリに`.env`ファイルを作成し、お使いのGemini APIキーを設定します。`docker-compose.yml`がこのファイルを自動的に読み込み、コンテナ内の環境変数を設定します。
 
-3. サーバー起動：
-```bash
-npm run dev
-```
+    ```.env
+    GEMINI_API_KEY=your-api-key-here
+    ```
+
+2.  **コンテナのビルドと起動**
+
+    以下のコマンドを実行して、Dockerコンテナをビルドし、バックグラウンドで起動します。
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+3.  **アクセス**
+
+    サーバーは `http://localhost:3000` で起動します。
+
+### 開発
+
+- ソースコードの変更は、Dockerコンテナに自動的に反映されます。
+- ログを確認したい場合は、以下のコマンドを実行します。
+  ```bash
+  docker-compose logs -f
+  ```
+- コンテナを停止するには、以下のコマンドを実行します。
+  ```bash
+  docker-compose down
+  ```
 
 ## 技術仕様
 
