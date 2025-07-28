@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { mkdirSync, writeFile } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { exec } from 'child_process';
 import { getInstallationAccessToken } from './githubAuth.js';
 
 // Define incoming message structure for type safety
@@ -182,6 +183,15 @@ app.post('/api/chat', async (_req, res) => {
           console.error('Failed to write GitHub token to file:', err);
         } else {
           console.log('GitHub token successfully written to .github_token');
+          
+          // gh auth setup-gitを実行
+          exec(`echo ${githubToken} | gh auth login --with-token && gh auth setup-git`, { cwd: workingDir }, (error, stdout, stderr) => {
+            if (error) {
+              console.error('Failed to setup git auth with gh:', error);
+            } else {
+              console.log('GitHub CLI auth setup completed successfully');
+            }
+          });
         }
       });
     } catch (error) {
@@ -362,7 +372,6 @@ wss.on('connection', (ws) => {
                     // Set GitHub Token for run_shell_command from session
                     if (fc.name === 'run_shell_command' && session.githubToken) {
                       process.env.GH_TOKEN = session.githubToken;
-                      console.log(`Executing 'run_shell_command': GH_TOKEN is set.`);
                     }
 
                     const result = await tool.execute(fc.args || {}, new AbortController().signal);
@@ -370,7 +379,6 @@ wss.on('connection', (ws) => {
                     // Clean up environment variable
                     if (fc.name === 'run_shell_command' && session.githubToken) {
                       delete process.env.GH_TOKEN;
-                      console.log(`Finished 'run_shell_command': GH_TOKEN is unset.`);
                     }
 
                     if (typeof result.llmContent === 'string') {
