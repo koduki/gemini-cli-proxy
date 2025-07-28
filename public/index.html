@@ -1,4 +1,3 @@
-mkdir public
 <!DOCTYPE html>  
 <html>  
 <head>  
@@ -43,8 +42,8 @@ mkdir public
         <h1>Gemini CLI Proxy</h1>  
         <div id="messages"></div>  
         <div id="input-container">  
-            <input type="text" id="message-input" placeholder="メッセージを入力..." />  
-            <button onclick="sendMessage()">送信</button>  
+            <input type="text" id="message-input" placeholder="Enter a message..." />  
+            <button onclick="sendMessage()">Send</button>  
         </div>  
     </div>  
   
@@ -59,9 +58,9 @@ mkdir public
                 sessionId = data.sessionId;  
                   
                 connectWebSocket();  
-                addMessage('システム', 'セッションが作成されました', 'ai-message');  
+                addMessage('System', 'Session created successfully.', 'ai-message');  
             } catch (error) {  
-                addMessage('エラー', 'セッション作成に失敗しました: ' + error.message, 'error-message');  
+                addMessage('Error', 'Failed to create session: ' + error.message, 'error-message');  
             }  
         }  
   
@@ -78,14 +77,14 @@ mkdir public
             };  
   
             ws.onerror = (error) => {  
-                addMessage('エラー', 'WebSocket接続エラー', 'error-message');  
+                addMessage('Error', 'WebSocket connection error.', 'error-message');  
             };  
         }  
   
         function handleWebSocketMessage(message) {  
             switch (message.type) {  
                 case 'ready':  
-                    addMessage('システム', 'WebSocket接続が確立されました', 'system-message');  
+                    addMessage('System', 'WebSocket connection established.', 'system-message');  
                     break;  
                 case 'stream_chunk':  
                     if (message.data.type === 'content') {  
@@ -93,16 +92,16 @@ mkdir public
                     }  
                     break;  
                 case 'stream_end':  
-                    // ストリーミング終了  
+                    // Streaming finished
                     break;  
                 case 'tool_result':
-                    addMessage('ツール実行', `${message.data.toolName}: ${message.data.result || '完了'}`, 'tool-message');
+                    addMessage('Tool', `${message.data.toolName}: ${message.data.result || 'Completed'}`, 'tool-message');
                     break;
                 case 'tool_error':
-                    addMessage('ツールエラー', `${message.data.toolName}: ${message.data.error}`, 'error-message');
+                    addMessage('Tool Error', `${message.data.toolName}: ${message.data.error}`, 'error-message');
                     break;
                 case 'error':  
-                    addMessage('エラー', message.error, 'error-message');  
+                    addMessage('Error', message.error, 'error-message');  
                     break;  
             }  
         }  
@@ -113,8 +112,8 @@ mkdir public
               
             if (!message || !ws) return;  
   
-            addMessage('あなた', message, 'user-message');  
-            addMessage('Gemini', '', 'ai-message'); // 空のAI応答を準備  
+            addMessage('You', message, 'user-message');  
+            addMessage('Gemini', '', 'ai-message'); // Prepare an empty AI response
               
             ws.send(JSON.stringify({ type: 'message', content: message }));  
             input.value = '';  
@@ -141,14 +140,14 @@ mkdir public
             messagesDiv.scrollTop = messagesDiv.scrollHeight;  
         }  
   
-        // Enterキーでメッセージ送信  
+        // Send message on Enter key
         document.getElementById('message-input').addEventListener('keypress', (e) => {  
             if (e.key === 'Enter') {  
                 sendMessage();  
             }  
         });  
   
-        // ページ読み込み時にセッション作成  
+        // Create session on page load
         createSession();  
     </script>  
 </body>  
