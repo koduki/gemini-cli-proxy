@@ -184,13 +184,34 @@ app.post('/api/chat', async (_req, res) => {
         } else {
           console.log('GitHub token successfully written to .github_token');
           
-          // gh auth setup-gitを実行
-          exec(`echo ${githubToken} | gh auth login --with-token && gh auth setup-git`, { cwd: workingDir }, (error, stdout, stderr) => {
-            if (error) {
-              console.error('Failed to setup git auth with gh:', error);
-            } else {
-              console.log('GitHub CLI auth setup completed successfully');
-            }
+          // gh auth statusを確認してからsetup-gitを実行
+          exec(`gh auth status`, { cwd: workingDir }, (statusError, statusStdout, statusStderr) => {
+            console.log('=== GitHub CLI auth status ===');
+            console.log(statusStdout || statusStderr || 'No output');
+            
+            // gh auth loginを実行
+            exec(`echo ${githubToken} | gh auth login --with-token`, { cwd: workingDir }, (loginError, loginStdout, loginStderr) => {
+              if (loginError) {
+                console.error('Failed to login with gh:', loginError);
+                console.error('stderr:', loginStderr);
+              } else {
+                console.log('=== GitHub CLI login result ===');
+                console.log(loginStdout || 'Login completed (no output)');
+                if (loginStderr) console.log('stderr:', loginStderr);
+                
+                // gh auth setup-gitを実行
+                exec(`gh auth setup-git`, { cwd: workingDir }, (setupError, setupStdout, setupStderr) => {
+                  if (setupError) {
+                    console.error('Failed to setup git auth:', setupError);
+                    console.error('stderr:', setupStderr);
+                  } else {
+                    console.log('=== GitHub CLI git auth setup result ===');
+                    console.log(setupStdout || 'Git auth setup completed (no output)');
+                    if (setupStderr) console.log('stderr:', setupStderr);
+                  }
+                });
+              }
+            });
           });
         }
       });
