@@ -138,4 +138,4 @@ DockerとDocker Composeを使用して、簡単に環境を構築できます。
 
 ## ライセンス
 
-[MIT License](LICENSE)
+[Apache License 2.0](LICENSE)

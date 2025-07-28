@@ -1,5 +1,7 @@
 # Gemini CLI Proxy
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+
 A WebSocket-based proxy for the Gemini CLI that enables stateful and agentic interactions through a web interface, powered by `@google/gemini-cli-core`.
 
 This project aims to provide flexible integration with various environments, including chats like Slack, IDEs, and CI/CD pipelines.
@@ -140,4 +142,4 @@ After creating a session, connect to the WebSocket endpoint.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Apache License 2.0](LICENSE).
