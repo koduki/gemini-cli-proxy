@@ -149,7 +149,7 @@ app.post('/api/chat', async (_req, res) => {
       });
     }
 
-    const workingDir = "/workspace";
+    const workingDir = "/home/workspace";
     mkdirSync(workingDir, { recursive: true });
 
     const config = new Config({

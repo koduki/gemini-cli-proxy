@@ -1,0 +1,5 @@
+#cloud-config
+runcmd:
+  - mkdir /home/chronos/workspace
+  - chown 1000:1000 /home/chronos/workspace
+  - docker run -d --log-driver=gcplogs --name openvscode -p 8000:3000 -v /home/chronos/workspace/:/home/workspace gitpod/openvscode-server:1.102.3
