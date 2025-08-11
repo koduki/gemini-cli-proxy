@@ -26,11 +26,11 @@ The core components consist of a WebSocket server, a session manager, and an Exp
 
 ```mermaid
 graph TB
-    Client[Web Browser] -- 1. Create session via REST API --> Server[Proxy Server]
-    Server -- 2. Initialize GeminiClient --> Gemini
-    Client -- 3. Connect via WebSocket --> Server
-    Server -- 4. Send/Receive messages --> Client
-    Server -- 5. Execute tools/API calls --> Gemini
+    A["Client (Web Browser)"] -- "Create session" --> B["Proxy Server"]
+    B -- "Initialize GeminiClient" --> C["Gemini API"]
+    A -- "Connect WebSocket" --> B
+    A <--> |"Send/Receive"| B
+    B -- "Execute tools" --> C
 ```
 
 ## Getting Started
@@ -74,6 +74,8 @@ You can get the proxy up and running quickly using Docker and Docker Compose.
     ```
 ## Deploy for GCE
 
+Deploy both `gemini-cli-proxy` and `openvscode-server` to GCE.
+
 ### Preparation: Create Secrets in Secret Manager
 
 ```powershell
@@ -94,7 +96,24 @@ gcloud secrets create github-app-private-key `
     --labels="service=gemini-cli-proxy"
 ```
 
-### Deploy with COS
+### Preparation: Firewall
+
+To allow access from your IP address to ports 3000 and 8000 on instances with the `session-node` tag, run the following commands:
+
+```bash
+# Allow access to ports 3000 and 8000
+gcloud compute firewall-rules create allow-session-node \
+    --network=default \
+    --direction=INGRESS \
+    --action=ALLOW \
+    --rules=tcp:3000,tcp:8000 \
+    --source-ranges=${MY_IP}/32 \
+    --target-tags=session-node \
+    --description="Allow gemini-cli-proxy and openvscode-server to access from your IP to instances with session-node tag"
+```
+
+### Deploying to GCP (Using Container-Optimized OS)
+
 
 ```bash
 # Get secrets
@@ -104,30 +123,25 @@ GITHUB_APP_INSTALLATION_ID="$(gcloud secrets versions access latest --secret='gi
 GITHUB_APP_PRIVATE_KEY="$(gcloud secrets versions access latest --secret='github-app-private-key')"
 
 # VM Configurations
-PROJECT_ID="YOUR_PROJECT_ID"
 ZONE="us-central1-f"
 INSTANCE_NAME="vm-endpoint01"
 MACHINE_TYPE="e2-medium"
 
 # Create an instance
 gcloud compute instances create-with-container "${INSTANCE_NAME}" \
-    --project "${PROJECT_ID}" \
     --zone "${ZONE}" \
     --machine-type "${MACHINE_TYPE}" \
     --container-image "docker.io/koduki/gemini-cli-proxy" \
     --container-restart-policy "always" \
     --container-env "GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_APP_ID=${GITHUB_APP_ID},GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID},GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}" \
-    --container-mount-host-path "host-path=/home/chronos/workspace,mount-path=/workspace" \
+    --container-mount-host-path "host-path=/home/chronos/workspace,mount-path=/home/workspace" \
+    --metadata-from-file user-data=cloud-init.yaml \
     --boot-disk-size "10GB" \
     --image-project "cos-cloud" \
     --image-family "cos-stable" \
     --provisioning-model "SPOT" \
-    --instance-termination-action "STOP" \
     --network-interface "network=default,subnet=default" \
     --scopes "https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append" \
-    --shielded-vtpm \
-    --shielded-integrity-monitoring \
-    --no-shielded-secure-boot \
     --metadata "enable-oslogin=true,google-logging-enabled=true,google-monitoring-enabled=true" \
     --labels "container-vm=${INSTANCE_NAME}" \
     --tags "session-node" 
