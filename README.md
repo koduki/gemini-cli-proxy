@@ -72,6 +72,66 @@ You can get the proxy up and running quickly using Docker and Docker Compose.
     ```bash
     docker exec -it gemini-cli-proxy-gemini-cli-proxy-1 bash
     ```
+## Deploy for GCE
+
+### Preparation: Create Secrets in Secret Manager
+
+```powershell
+Write-Output -NoNewline "YOUR_GEMINI_KEY" | gcloud secrets create gemini-api-key `
+    --data-file=- `
+    --labels="service=gemini-cli-proxy"
+
+Write-Output -NoNewline "YOUR_GITAPP_ID" | gcloud secrets create github-app-id `
+    --data-file=- `
+    --labels="service=gemini-cli-proxy"
+
+Write-Output -NoNewline "YOUR_GITAPP_INSTALLRION_ID"" | gcloud secrets create github-app-installation-id `
+    --data-file=- `
+    --labels="service=gemini-cli-proxy"
+
+gcloud secrets create github-app-private-key `
+    --data-file=emini-cli-proxy.2025-07-28.private-key.pem `
+    --labels="service=gemini-cli-proxy"
+```
+
+### Deploy with COS
+
+```bash
+# Get secrets
+GEMINI_API_KEY="$(gcloud secrets versions access latest --secret='gemini-api-key')"
+GITHUB_APP_ID="$(gcloud secrets versions access latest --secret='github-app-id')"
+GITHUB_APP_INSTALLATION_ID="$(gcloud secrets versions access latest --secret='github-app-installation-id')"
+GITHUB_APP_PRIVATE_KEY="$(gcloud secrets versions access latest --secret='github-app-private-key')"
+
+# VM Configurations
+PROJECT_ID="YOUR_PROJECT_ID"
+ZONE="us-central1-f"
+INSTANCE_NAME="vm-endpoint01"
+MACHINE_TYPE="e2-medium"
+
+# Create an instance
+gcloud compute instances create-with-container "${INSTANCE_NAME}" \
+    --project "${PROJECT_ID}" \
+    --zone "${ZONE}" \
+    --machine-type "${MACHINE_TYPE}" \
+    --container-image "docker.io/koduki/gemini-cli-proxy" \
+    --container-restart-policy "always" \
+    --container-env "GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_APP_ID=${GITHUB_APP_ID},GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID},GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}" \
+    --container-mount-host-path "host-path=/home/chronos/workspace,mount-path=/workspace" \
+    --boot-disk-size "10GB" \
+    --image-project "cos-cloud" \
+    --image-family "cos-stable" \
+    --provisioning-model "SPOT" \
+    --instance-termination-action "STOP" \
+    --network-interface "network=default,subnet=default" \
+    --scopes "https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append" \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --no-shielded-secure-boot \
+    --metadata "enable-oslogin=true,google-logging-enabled=true,google-monitoring-enabled=true" \
+    --labels "container-vm=${INSTANCE_NAME}" \
+    --tags "session-node" 
+```
 
 ## API Reference
 
