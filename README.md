@@ -26,11 +26,11 @@ The core components consist of a WebSocket server, a session manager, and an Exp
 
 ```mermaid
 graph TB
-    A[Client (Web Browser)] -- "Create session (REST API)" --> B[Proxy Server]
-    B -- "Initialize GeminiClient" --> C[Gemini API]
-    A -- "Connect (WebSocket)" --> B
-    A <--"Send/Receive messages"--> B
-    B -- "Execute tools/API calls" --> C
+    A["Client (Web Browser)"] -- "Create session" --> B["Proxy Server"]
+    B -- "Initialize GeminiClient" --> C["Gemini API"]
+    A -- "Connect WebSocket" --> B
+    A <--> |"Send/Receive"| B
+    B -- "Execute tools" --> C
 ```
 
 ## Getting Started
