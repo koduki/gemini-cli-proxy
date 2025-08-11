@@ -26,11 +26,11 @@ The core components consist of a WebSocket server, a session manager, and an Exp
 
 ```mermaid
 graph TB
-    Client[Web Browser] -- 1. Create session via REST API --> Server[Proxy Server]
-    Server -- 2. Initialize GeminiClient --> Gemini
-    Client -- 3. Connect via WebSocket --> Server
-    Server -- 4. Send/Receive messages --> Client
-    Server -- 5. Execute tools/API calls --> Gemini
+    A[Client (Web Browser)] -- "1. Create session (REST API)" --> B[Proxy Server]
+    B -- "2. Initialize GeminiClient" --> C[Gemini API]
+    A -- "3. Connect (WebSocket)" --> B
+    A <-- "4. Send/Receive messages" --> B
+    B -- "5. Execute tools/API calls" --> C
 ```
 
 ## Getting Started
@@ -74,6 +74,8 @@ You can get the proxy up and running quickly using Docker and Docker Compose.
     ```
 ## Deploy for GCE
 
+Deploy both `gemini-cli-proxy` and `openvscode-server` to GCE.
+
 ### Preparation: Create Secrets in Secret Manager
 
 ```powershell
@@ -94,7 +96,24 @@ gcloud secrets create github-app-private-key `
     --labels="service=gemini-cli-proxy"
 ```
 
-### Deploy with COS
+### Preparation: Firewall
+
+To allow access from your IP address to ports 3000 and 8000 on instances with the `session-node` tag, run the following commands:
+
+```bash
+# Allow access to ports 3000 and 8000
+gcloud compute firewall-rules create allow-session-node \
+    --network=default \
+    --direction=INGRESS \
+    --action=ALLOW \
+    --rules=tcp:3000,tcp:8000 \
+    --source-ranges=${MY_IP}/32 \
+    --target-tags=session-node \
+    --description="Allow gemini-cli-proxy and openvscode-server to access from your IP to instances with session-node tag"
+```
+
+### Deploying to GCP (Using Container-Optimized OS)
+
 
 ```bash
 # Get secrets
