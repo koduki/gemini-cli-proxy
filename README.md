@@ -26,33 +26,35 @@ The core components consist of a WebSocket server, a session manager, and an Exp
 
 ```mermaid
 graph TD
-    subgraph User Interface
-        A[User/WebSocket]
-    end
+  %% Groups
+  subgraph UI["User Interface"]
+    A[User / WebSocket]
+  end
 
-    subgraph Core Logic
-        B[Session Manager]
-        C[Config]
-        D[GeminiClient]
-        E[ToolRegistry]
-    end
+  subgraph CL["Core Logic"]
+    B[Session Manager]
+    C[Config]
+    D[Gemini Client]
+    E[Tool Registry]
+  end
 
-    subgraph External Services
-        F[Gemini API]
-    end
+  subgraph ES["External Services"]
+    F[Gemini API]
+  end
 
-    A -- "1. Prompt" --> B
-    B -- "2. Update History & Context" --> D
-    D -- "3. Get Settings" --> C
-    D -- "4. Get Available Tools" --> E
-    D -- "5. Send Request" --> F
-    F -- "6. Tool Call Request" --> D
-    D -- "7. Execute Tool" --> E
-    E -- "8. Tool Result" --> D
-    D -- "9. Send Tool Result" --> F
-    F -- "10. Final Response" --> D
-    D -- "11. Receive Response" --> B
-    B -- "12. Display to User" --> A
+  %% Edges
+  A -->|① Prompt| B
+  B -->|② Update History & Context| D
+  D -->|③ Get Settings| C
+  D -->|④ Get Available Tools| E
+  D -->|⑤ Send Request| F
+  F -->|⑥ Tool Call Request| D
+  D -->|⑦ Execute Tool| E
+  E -->|⑧ Tool Result| D
+  D -->|⑨ Send Tool Result| F
+  F -->|⑩ Final Response| D
+  D -->|⑪ Receive Response| B
+  B -->|⑫ Display to User| A
 ```
 
 ## Getting Started
